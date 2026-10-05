@@ -8,9 +8,9 @@ The backend of a personal dashboard application, written in Java with Spring Boo
 
 * **Registration with email verification.** New accounts are disabled until the user clicks the link in the verification email. Verification tokens expire after 24 hours and can be re-sent.
 * **JWT authentication.** Login returns a short-lived access token (HMAC-SHA256, 60 minutes by default) and a refresh token. A custom filter validates the `Authorization: Bearer …` header on every request, and the API is fully stateless.
-* **Refresh tokens in Redis** with a 7-day lifetime, so they can be revoked on logout. They are indexed in both directions (user → token and token → user), so every lookup is a single key read instead of a scan.
+* **Refresh tokens in Redis** with a 7-day lifetime, so they can be revoked on logout.
 * **Password hashing** with BCrypt, request validation with Jakarta Bean Validation, and consistent JSON error responses from a global exception handler.
-* **Role-based access control:** roles (`ROLE\_USER`, `ROLE\_ADMIN`) are stored per user, and the `/api1/admin/\*\*` endpoints are restricted to admins.
+* **Roles** (`ROLE_USER`, `ROLE_ADMIN`) stored per user and loaded into Spring Security.
 * **API documentation** with Swagger UI (springdoc-openapi).
 * **Tests:** unit tests with Mockito, controller tests with MockMvc, and integration tests that run against real PostgreSQL and Redis containers using Testcontainers. The test suite was written with the help of an AI assistant and reviewed by me.
 
@@ -39,7 +39,7 @@ backend/src/main/java/dev/lpcsontos/dashboard/
 ├── config/          security, Redis cache and global error handling
 └── modules/
     ├── auth/        controller, services (auth, JWT, refresh tokens), JWT filter, DTOs
-    └── user/        user entity, repository, UserDetailsService, /me and admin endpoints
+    └── user/        user entity, repository, UserDetailsService, /me endpoint
 ```
 
 ## Running locally
@@ -73,6 +73,6 @@ Run the tests with `./gradlew test` (Docker must be running for the integration 
 ## Planned
 
 * Google sign-in (the user entity already has a `provider` field for it)
-* More admin features for managing users
+* Admin endpoints for managing users
 * The dashboard features themselves
 
