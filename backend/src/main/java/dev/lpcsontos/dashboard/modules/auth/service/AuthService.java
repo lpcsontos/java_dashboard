@@ -1,5 +1,6 @@
 package dev.lpcsontos.dashboard.modules.auth.service;
 
+import org.springframework.transaction.annotation.Transactional;
 import dev.lpcsontos.dashboard.modules.auth.domain.VerificationToken;
 import dev.lpcsontos.dashboard.modules.auth.dto.*;
 import dev.lpcsontos.dashboard.modules.auth.exception.EmailAlreadyUsedException;
@@ -53,6 +54,7 @@ public class AuthService {
 
     private String createVerificationToken(User user) {
         tokens.deleteByUserId(user.getId());
+	tokens.flush();
 
         String token = java.util.UUID.randomUUID().toString();
 
@@ -77,21 +79,21 @@ public class AuthService {
         mailSender.send(message);
     }
 
+    @Transactional
     public void resendVerification(ResendVerificationRequest request) {
-        User user = users.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+    	Optional<User> maybeUser = users.findByEmail(request.getEmail());
 
-        if (user.isEnabled()) {
-            throw new EmailAlreadyUsedException("User is already verified");
-        }
+    	if (maybeUser.isEmpty() || maybeUser.get().isEnabled()) {
+        	return;
+    	}
 
-        tokens.deleteByUserId(user.getId());
-
-        String token = createVerificationToken(user);
-        sendVerificationEmail(user.getEmail(), token);
+    	User user = maybeUser.get();
+    	String token = createVerificationToken(user);
+    	sendVerificationEmail(user.getEmail(), token);
     }
 
 
+    @Transactional
     public void register(RegisterRequest request) {
         if (users.existsByEmail(request.getEmail())) {
             throw new EmailAlreadyUsedException("Email already in use");
@@ -155,6 +157,7 @@ public class AuthService {
         return new JwtResponse(newAccessToken, refreshToken);
     }
 
+    @Transactional
     public void verifyAccount(String token) {
         VerificationToken vt = tokens.findByToken(token)
                 .orElseThrow(() -> new InvalidTokenException("Invalid verification token"));
